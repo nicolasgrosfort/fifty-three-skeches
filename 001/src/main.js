@@ -1,6 +1,6 @@
 import opentype from "opentype.js";
 import paper from "paper";
-import camBamStickyUrl from "./fonts/cam-bam-stick-4.ttf";
+import camBamStickyUrl from "./fonts/jet-brains-mono-thin.ttf";
 
 // --- Bookmark setup (mm-like units in viewBox)
 const BOOKMARK = { w: 50, h: 200 };
@@ -11,7 +11,7 @@ const STROKE_COLOR = "#252525";
 const BG_COLOR = "#f5f5f5";
 const FONT_SIZE = 3; // in viewBox units
 const STROKE_WIDTH = 0.32; // in viewBox units
-const LINE_FACTOR = 1.25; // line height multiplier
+const LINE_FACTOR = 1.2; // line height multiplier
 
 // --- 1) Create SVG host in DOM
 let svgHost = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -123,9 +123,9 @@ function importStrokePath(d) {
   const imported = paper.project.importSVG(mini);
   const item = imported.className === "Group" ? imported.children[0] : imported;
 
-  item.fillColor = null;
-  item.strokeColor = STROKE_COLOR;
-  item.strokeWidth = STROKE_WIDTH;
+  item.fillColor = "black";
+  item.strokeColor = null;
+  item.strokeWidth = null;
   item.strokeCap = "round";
   item.strokeJoin = "round";
 
@@ -176,19 +176,11 @@ function exportToDOM() {
   svgHost = exported;
 }
 
-function makePolygon(points) {
-  const poly = new paper.Path(points.map(([x, y]) => new paper.Point(x, y)));
-  poly.closed = true;
-  poly.fillColor = new paper.Color(0, 0, 0, 0.08); // debug
-  poly.strokeColor = new paper.Color(0, 0, 0, 0.25); // debug
-  return poly;
-}
-
 // --- 7) Load font once + run
 opentype.load(camBamStickyUrl, (err, font) => {
   if (err) return console.error(err);
 
-  const lines = generateFakeCode(53);
+  const lines = ['tekh.log("hny-26").refine()', ...generateFakeCode(56)];
   renderCode(font, lines);
   exportToDOM();
 });
