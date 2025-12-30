@@ -1,205 +1,194 @@
-import { SVG } from "@svgdotjs/svg.js";
 import opentype from "opentype.js";
+import paper from "paper";
 import camBamStickyUrl from "./fonts/cam-bam-stick-4.ttf";
 
-const BOOKMARK = { w: 50, h: 200 }; // portrait
-const MARGIN = 2;
+// --- Bookmark setup (mm-like units in viewBox)
+const BOOKMARK = { w: 50, h: 200 };
+const MARGIN = 0;
 
-const FONT_URL = camBamStickyUrl;
+// --- Style
+const STROKE_COLOR = "#252525";
+const BG_COLOR = "#f5f5f5";
+const FONT_SIZE = 3; // in viewBox units
+const STROKE_WIDTH = 0.32; // in viewBox units
+const LINE_FACTOR = 1.25; // line height multiplier
 
-const BLACK = "#252525";
-const PINK = "#FF00FF"; // Rose
-const BLUE = "#00FFFF"; // Bleu
-const YELLOW = "#FFFF00"; // Jaune
-const GREEN = "#00FF00"; // Vert
-const WHITE = "#f5f5f5";
+// --- 1) Create SVG host in DOM
+let svgHost = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+svgHost.setAttribute("id", "bookmark");
+svgHost.setAttribute("width", `${BOOKMARK.w}mm`);
+svgHost.setAttribute("height", `${BOOKMARK.h}mm`);
+svgHost.setAttribute("viewBox", `0 0 ${BOOKMARK.w} ${BOOKMARK.h}`);
+document.getElementById("app").appendChild(svgHost);
 
-const FONT_SIZE = 3;
-const STROKE = 0.3175;
+// --- 2) Paper "offscreen" setup (we export SVG at the end)
+paper.setup(new paper.Size(BOOKMARK.w, BOOKMARK.h));
 
-const CODE_TEXT = `opentype.load(FONT_URL, (err, font) => {
-  if (err) return console.error(err);
+function setSVGAttributes(svgEl) {
+  svgEl.setAttribute("id", "bookmark");
+  svgEl.setAttribute("width", `${BOOKMARK.w}mm`);
+  svgEl.setAttribute("height", `${BOOKMARK.h}mm`);
+  svgEl.setAttribute("viewBox", `0 0 ${BOOKMARK.w} ${BOOKMARK.h}`);
+}
 
-  const draw = SVG()
-    .addTo(\"#app\")
-    .size(\\\`\\\${BOOKMARK.w}mm\\\`, \\\`\\\${BOOKMARK.h}mm\\\`)
-    .viewbox(0, 0, BOOKMARK.w, BOOKMARK.h);
+// --- 3) Fake code generator (about ~30 lines)
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+function choice(arr) {
+  return arr[randInt(0, arr.length - 1)];
+}
+function ident() {
+  const parts = [
+    "user",
+    "room",
+    "token",
+    "state",
+    "node",
+    "view",
+    "data",
+    "rect",
+    "path",
+    "font",
+    "line",
+    "clip",
+  ];
+  const suffix = [
+    "Id",
+    "Map",
+    "List",
+    "Cfg",
+    "Ref",
+    "Count",
+    "Index",
+    "Value",
+    "State",
+  ];
+  return Math.random() < 0.4 ? choice(parts) + choice(suffix) : choice(parts);
+}
+function stringLit() {
+  const words = [
+    "hello",
+    "bookmark",
+    "paper",
+    "opentype",
+    "svg",
+    "render",
+    "stroke",
+    "path",
+  ];
+  return `"${choice(words)}-${randInt(1, 99)}"`;
+}
+function numberLit() {
+  return String(randInt(0, 999));
+}
 
-  const lines = CODE_TEXT.split(\"\\n\");
+function makeCodeLine(i) {
+  const templates = [
+    () => `const ${ident()} = ${numberLit()};`,
+    () => `let ${ident()} = ${stringLit()};`,
+    () => `function ${ident()}(${ident()}) { return ${ident()}; }`,
+    () => `if (${ident()} > ${numberLit()}) { ${ident()}++; }`,
+    () => `for (let i = 0; i < ${randInt(3, 12)}; i++) { ${ident()}.push(i); }`,
+    () => `console.log(${ident()}, ${stringLit()});`,
+    () => `export const ${ident()} = (${ident()}) => ${ident()};`,
+    () =>
+      `${ident()}.${choice([
+        "add",
+        "set",
+        "get",
+        "map",
+        "filter",
+      ])}(${ident()});`,
+    () =>
+      `// ${choice(["TODO", "FIXME", "NOTE"])}: ${choice([
+        "cleanup",
+        "optimize",
+        "refactor",
+        "edge case",
+      ])} ${i}`,
+  ];
+  return templates[randInt(0, templates.length - 1)]();
+}
+
+function generateFakeCode(lineCount = 30) {
+  const lines = [];
+  for (let i = 1; i <= lineCount; i++) lines.push(makeCodeLine(i));
+  return lines;
+}
+
+// --- 4) Convert OpenType path data -> Paper item (stroke only)
+function importStrokePath(d) {
+  const mini = `<svg xmlns="http://www.w3.org/2000/svg"><path d="${d}"/></svg>`;
+  const imported = paper.project.importSVG(mini);
+  const item = imported.className === "Group" ? imported.children[0] : imported;
+
+  item.fillColor = null;
+  item.strokeColor = STROKE_COLOR;
+  item.strokeWidth = STROKE_WIDTH;
+  item.strokeCap = "round";
+  item.strokeJoin = "round";
+
+  return item;
+}
+
+// --- 5) Render lines using OpenType baseline metrics
+function renderCode(font, lines) {
+  paper.project.clear();
+
+  // Background (optional)
+  const bg = new paper.Path.Rectangle(
+    new paper.Rectangle(0, 0, BOOKMARK.w, BOOKMARK.h)
+  );
+  bg.fillColor = BG_COLOR;
+  bg.strokeColor = null;
 
   const lineHeight =
-    ((font.ascender - font.descender) / font.unitsPerEm) * FONT_SIZE * 1.25;
+    ((font.ascender - font.descender) / font.unitsPerEm) *
+    FONT_SIZE *
+    LINE_FACTOR;
 
+  // Baseline start (top margin + ascender)
   let y = MARGIN + (font.ascender / font.unitsPerEm) * FONT_SIZE;
 
-  const getColor = (word) => {
-    if (
-      [
-        \"const\",
-        \"let\",
-        \"var\",
-        \"import\",
-        \"from\",
-        \"return\",
-        \"if\",
-        \"else\",
-        \"function\",
-        \"=>\",
-      ].includes(word)
-    )
-      return BLACK;
-    if (word.startsWith('\\\"') || word.startsWith(\"'\") || word.startsWith(\"\\\`\"))
-      return YELLOW;
-    if (
-      [
-        \"SVG\",
-        \"opentype\",
-        \"console\",
-        \"Math\",
-        \"window\",
-        \"document\",
-        \"draw\",
-        \"font\",
-        \"path\",
-        \"err\",
-      ].includes(word) ||
-      word.includes(\"(\")
-    )
-      return BLUE;
-    if (
-      [\"true\", \"false\", \"null\", \"undefined\"].includes(word) ||
-      !isNaN(Number(word))
-    )
-      return GREEN;
-    return PINK;
-  };
+  for (const line of lines) {
+    const x = MARGIN;
 
-  lines.forEach((line) => {
-    let x = MARGIN;
-    const words = line.split(/(\\s+|[(){},.;:\\\`'\"=])/g);
+    // OpenType gives us a single outline path for the whole line
+    const otPath = font.getPath(line, x, y, FONT_SIZE, { kerning: true });
+    const d = otPath.toPathData(2);
 
-    words.forEach((word) => {
-      if (!word) return;
-
-      const color = getColor(word.trim());
-      const path = font.getPath(word, x, y, FONT_SIZE);
-      const d = path.toPathData(2);
-      const width = font.getAdvanceWidth(word, FONT_SIZE);
-
-      if (word.trim().length > 0) {
-        draw.path(d).fill(\"none\").stroke({
-          width: STROKE,
-          linecap: \"round\",
-          linejoin: \"round\",
-          color: color,
-        });
-      }
-
-      x += width;
-    });
+    importStrokePath(d);
 
     y += lineHeight;
-  });
-});`;
+    if (y > BOOKMARK.h - MARGIN) break; // stop if we overflow bookmark
+  }
 
-opentype.load(FONT_URL, (err, font) => {
+  paper.view.update();
+}
+
+// --- 6) Export SVG to DOM
+function exportToDOM() {
+  const exported = paper.project.exportSVG({ asString: false, precision: 3 });
+  setSVGAttributes(exported);
+
+  svgHost.replaceWith(exported);
+  svgHost = exported;
+}
+
+function makePolygon(points) {
+  const poly = new paper.Path(points.map(([x, y]) => new paper.Point(x, y)));
+  poly.closed = true;
+  poly.fillColor = new paper.Color(0, 0, 0, 0.08); // debug
+  poly.strokeColor = new paper.Color(0, 0, 0, 0.25); // debug
+  return poly;
+}
+
+// --- 7) Load font once + run
+opentype.load(camBamStickyUrl, (err, font) => {
   if (err) return console.error(err);
 
-  const draw = SVG()
-    .addTo("#app")
-    .size(`${BOOKMARK.w}mm`, `${BOOKMARK.h}mm`)
-    .viewbox(0, 0, BOOKMARK.w, BOOKMARK.h);
-
-  const lines = CODE_TEXT.split("\n");
-
-  const lineHeight =
-    ((font.ascender - font.descender) / font.unitsPerEm) * FONT_SIZE * 1.25;
-
-  let y = MARGIN + (font.ascender / font.unitsPerEm) * FONT_SIZE;
-
-  const getColor = (word) => {
-    if (
-      [
-        "const",
-        "let",
-        "var",
-        "import",
-        "from",
-        "return",
-        "if",
-        "else",
-        "function",
-        "=>",
-      ].includes(word)
-    )
-      return BLACK;
-    if (word.startsWith('"') || word.startsWith("'") || word.startsWith("`"))
-      return YELLOW;
-    if (
-      [
-        "SVG",
-        "opentype",
-        "console",
-        "Math",
-        "window",
-        "document",
-        "draw",
-        "font",
-        "path",
-        "err",
-      ].includes(word) ||
-      word.includes("(")
-    )
-      return BLUE;
-    if (
-      ["true", "false", "null", "undefined"].includes(word) ||
-      !isNaN(Number(word))
-    )
-      return GREEN;
-    return PINK;
-  };
-
-  const pathsByColor = {
-    [BLACK]: [],
-    [PINK]: [],
-    [BLUE]: [],
-    [YELLOW]: [],
-    [GREEN]: [],
-  };
-
-  lines.forEach((line) => {
-    let x = MARGIN;
-    const words = line.split(/(\s+|[(){},.;:`'"=])/g);
-
-    words.forEach((word) => {
-      if (!word) return;
-
-      const color = getColor(word.trim());
-      const path = font.getPath(word, x, y, FONT_SIZE);
-      const d = path.toPathData(2);
-      const width = font.getAdvanceWidth(word, FONT_SIZE);
-
-      if (word.trim().length > 0) {
-        pathsByColor[color].push(d);
-      }
-
-      x += width;
-    });
-
-    y += lineHeight;
-  });
-
-  Object.entries(pathsByColor).forEach(([color, paths]) => {
-    if (paths.length > 0) {
-      const group = draw.group();
-      paths.forEach((d) => {
-        group.path(d).fill("none").stroke({
-          width: STROKE,
-          linecap: "round",
-          linejoin: "round",
-          color: color,
-        });
-      });
-    }
-  });
+  const lines = generateFakeCode(53);
+  renderCode(font, lines);
+  exportToDOM();
 });
