@@ -16,7 +16,7 @@ const PARAMS = {
   bookmarkH: 164,
 
   // --- margins (independent)
-  marginTop: 2,
+  marginTop: 8,
   marginRight: 2,
   marginBottom: 24,
   marginLeft: 2,
@@ -535,7 +535,7 @@ function rerender() {
 
   const lines = [
     `tèkh studio #${PARAMS.seed}`,
-    `hny-2026 => more agency`,
+    `hny-2026 => warm wishes`,
     `const sketch = "001 - Bookmark"`,
     ...generateFakeCode(PARAMS.seed, PARAMS.linesCount),
   ];

@@ -11,7 +11,7 @@ const PARAMS = {
   bookmarkH: 164,
 
   // --- margins
-  marginTop: 2,
+  marginTop: 8,
   marginRight: 2,
   marginBottom: 24,
   marginLeft: 2,
