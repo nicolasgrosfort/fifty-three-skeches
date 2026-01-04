@@ -45,7 +45,7 @@ const PARAMS = {
 };
 
 function randomSeed(len = 8) {
-  const alphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz";
+  const alphabet = "123456789abcdefghijkmnpqrstuvwxyz";
   let s = "";
   if (typeof crypto !== "undefined" && crypto.getRandomValues) {
     const buf = new Uint32Array(len);
