@@ -1,9 +1,13 @@
-# Fifty-three Sketches
+# Greeting Bookmark
 
-A colllection of 53 creative coding explorations. One for each week of the year.
+Bookmark generator. Production of nonsensical, random code; Boolean operations on code. Printing with axidraw.
 
-- [001 - Bookmark](./001%20-%20Bookmark/README.md)
+![Bookmark](./001%20-%20Bookmark/docs/bookmark-all-pYMUiddw.png)
 
----
+## Bookmarks
 
-![001 - Bookmark](./001%20-%20Bookmark/docs/bookmark-all-pYMUiddw.png)
+![Postcards](./docs/bookmark-all-pYMUiddw.png)
+
+## Postcards
+
+![Bookmarks](./docs/bookmark-all-5x9vhCq5.png)
